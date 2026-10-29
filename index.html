@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Times Tables Champion - MTC Practice</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Fredoka & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            fredoka: ['Fredoka', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              purple: '#7c3aed',
+              pink: '#ec4899',
+              yellow: '#f59e0b',
+              green: '#10b981',
+              blue: '#3b82f6',
+              sky: '#0284c7',
+              dark: '#1e1b4b'
+            }
+          },
+          boxShadow: {
+            'pop': '0 8px 0 0 rgba(0, 0, 0, 0.2)',
+            'pop-sm': '0 4px 0 0 rgba(0, 0, 0, 0.2)',
+            'pop-inner': 'inset 0 4px 0 0 rgba(0, 0, 0, 0.15)',
+          },
+          animation: {
+            'bounce-short': 'bounceShort 0.3s ease-in-out 2',
+            'pulse-fast': 'pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'shake': 'shake 0.4s ease-in-out',
+          },
+          keyframes: {
+            bounceShort: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            shake: {
+              '0%, 100%': { transform: 'translateX(0)' },
+              '20%, 60%': { transform: 'translateX(-8px)' },
+              '40%, 80%': { transform: 'translateX(8px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Fredoka', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .numpad-btn {
+      transition: all 0.08s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .numpad-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.2) !important;
+    }
+    /* Hide scrollbars for clean UI */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 p-3 sm:p-4 sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-2 cursor-pointer" onclick="app.showScreen('welcome-screen')">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center text-2xl shadow-lg shadow-rose-500/30">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-wide bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 bg-clip-text text-transparent">
+            Maths Star
+          </h1>
+          <p class="text-xs text-slate-400 font-sans hidden sm:block">UK MTC Multiplication Trainer</p>
+        </div>
+      </div>
+
+      <!-- Action Nav Buttons -->
+      <div class="flex items-center space-x-2">
+        <button id="sound-toggle-btn" onclick="app.toggleSound()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-200 transition text-sm flex items-center gap-2 border border-slate-600">
+          <i id="sound-icon" class="fas fa-volume-up text-emerald-400"></i>
+          <span class="hidden sm:inline text-xs font-sans">Sound</span>
+        </button>
+        <button onclick="app.showScreen('stats-screen')" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-200 transition text-sm flex items-center gap-2 border border-slate-600">
+          <i class="fas fa-chart-line text-amber-400"></i>
+          <span class="hidden sm:inline text-xs font-sans">Heatmap</span>
+        </button>
+        <button id="nav-config-btn" onclick="app.showScreen('config-screen')" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold transition text-sm shadow-md flex items-center gap-1.5">
+          <i class="fas fa-cog"></i>
+          <span class="hidden sm:inline">Settings</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-4xl w-full mx-auto p-3 sm:p-6 flex-1 flex flex-col justify-center">
+
+    <!-- 1. WELCOME SCREEN -->
+    <div id="welcome-screen" class="screen-view space-y-6 text-center py-4">
+      <div class="space-y-2">
+        <span class="inline-block px-4 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-full text-sm font-semibold border border-indigo-500/30">
+          Ready for Primary School MTC? 🏆
+        </span>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white">Master Your Times Tables!</h2>
+        <p class="text-slate-300 max-w-md mx-auto text-sm sm:text-base font-sans">
+          Practice speed, gain stars, and boost your maths confidence in a fun, relaxed environment.
+        </p>
+      </div>
+
+      <!-- Preset Selection Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto pt-2">
+        <!-- Practice Mode Card -->
+        <div onclick="app.quickStart('practice')" class="bg-gradient-to-br from-indigo-900/60 to-purple-900/60 border-2 border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl cursor-pointer transition transform hover:-translate-y-1 text-left relative overflow-hidden group shadow-xl">
+          <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-8xl">🎯</div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/30 flex items-center justify-center text-indigo-300 text-xl">
+              <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white">Custom Practice</h3>
+              <span class="text-xs text-indigo-300 font-sans">Configurable & Relaxed</span>
+            </div>
+          </div>
+          <p class="text-slate-300 text-xs font-sans mb-3">
+            Defaults: <span class="text-amber-300 font-bold">3, 4, 6s</span> tables with <span class="text-amber-300 font-bold">10 seconds</span> timer. Instant feedback & hints!
+          </p>
+          <div class="inline-flex items-center text-xs font-bold text-indigo-300 group-hover:text-white transition gap-1">
+            Play Practice Mode (25 Questions) <i class="fas fa-arrow-right text-xs"></i>
+          </div>
+        </div>
+
+        <!-- Official MTC Standard Mode -->
+        <div onclick="app.quickStart('mtc')" class="bg-gradient-to-br from-rose-900/60 to-amber-900/60 border-2 border-rose-500/40 hover:border-rose-400 p-5 rounded-2xl cursor-pointer transition transform hover:-translate-y-1 text-left relative overflow-hidden group shadow-xl">
+          <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-8xl">⚡</div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/30 flex items-center justify-center text-rose-300 text-xl">
+              <i class="fas fa-stopwatch"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white">MTC Test Mode</h3>
+              <span class="text-xs text-rose-300 font-sans">Official UK Standard</span>
+            </div>
+          </div>
+          <p class="text-slate-300 text-xs font-sans mb-3">
+            Strict check: <span class="text-rose-300 font-bold">25 questions</span> (2 to 12s), exactly <span class="text-rose-300 font-bold">6 seconds</span> per question.
+          </p>
+          <div class="inline-flex items-center text-xs font-bold text-rose-300 group-hover:text-white transition gap-1">
+            Start MTC Challenge <i class="fas fa-arrow-right text-xs"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="pt-4 flex flex-wrap justify-center gap-3">
+        <button onclick="app.showScreen('config-screen')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-xl font-bold text-sm transition shadow-md flex items-center gap-2">
+          <i class="fas fa-sliders-h text-amber-400"></i> Customize Tables & Time
+        </button>
+        <button onclick="app.showScreen('stats-screen')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-xl font-bold text-sm transition shadow-md flex items-center gap-2">
+          <i class="fas fa-fire text-rose-400"></i> View Table Heatmap
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. CONFIGURATION SCREEN -->
+    <div id="config-screen" class="screen-view hidden space-y-5 bg-slate-800/90 p-5 sm:p-7 rounded-3xl border border-slate-700 shadow-2xl max-w-2xl mx-auto">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fas fa-sliders text-amber-400"></i> Game Setup
+          </h2>
+          <p class="text-xs text-slate-400 font-sans">Adjust tables and speed to match your child's goal.</p>
+        </div>
+        <button onclick="app.showScreen('welcome-screen')" class="text-slate-400 hover:text-white text-lg p-2">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Table Selector -->
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <label class="text-sm font-semibold text-slate-200">Select Times Tables:</label>
+          <div class="space-x-2 text-xs font-sans">
+            <button onclick="app.selectAllTables(true)" class="text-indigo-400 hover:underline">Select All</button>
+            <span class="text-slate-600">|</span>
+            <button onclick="app.selectAllTables(false)" class="text-slate-400 hover:underline">Clear</button>
+            <span class="text-slate-600">|</span>
+            <button onclick="app.selectDefaultTables()" class="text-amber-400 hover:underline font-medium">Default (3, 4, 6)</button>
+          </div>
+        </div>
+
+        <div id="tables-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          <!-- Checkboxes dynamically rendered -->
+        </div>
+      </div>
+
+      <!-- Time Limit Selector -->
+      <div class="space-y-2">
+        <label class="text-sm font-semibold text-slate-200 block">Time Limit Per Question:</label>
+        <div class="grid grid-cols-5 gap-2 font-sans text-xs">
+          <button type="button" onclick="app.setTimerConfig(3)" id="timer-btn-3" class="timer-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">3s<br><span class="text-[10px] opacity-75 font-normal">Super Fast</span></button>
+          <button type="button" onclick="app.setTimerConfig(6)" id="timer-btn-6" class="timer-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">6s<br><span class="text-[10px] opacity-75 font-normal">MTC Standard</span></button>
+          <button type="button" onclick="app.setTimerConfig(10)" id="timer-btn-10" class="timer-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">10s<br><span class="text-[10px] opacity-75 font-normal">Default</span></button>
+          <button type="button" onclick="app.setTimerConfig(15)" id="timer-btn-15" class="timer-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">15s<br><span class="text-[10px] opacity-75 font-normal">Relaxed</span></button>
+          <button type="button" onclick="app.setTimerConfig(0)" id="timer-btn-0" class="timer-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">∞</button>
+        </div>
+      </div>
+
+      <!-- Question Count Selector -->
+      <div class="space-y-2">
+        <label class="text-sm font-semibold text-slate-200 block">Number of Questions:</label>
+        <div class="grid grid-cols-4 gap-2 font-sans text-xs">
+          <button type="button" onclick="app.setQCountConfig(10)" id="qcount-btn-10" class="qcount-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">10</button>
+          <button type="button" onclick="app.setQCountConfig(20)" id="qcount-btn-20" class="qcount-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">20</button>
+          <button type="button" onclick="app.setQCountConfig(25)" id="qcount-btn-25" class="qcount-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">25 (Default)</button>
+          <button type="button" onclick="app.setQCountConfig(50)" id="qcount-btn-50" class="qcount-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold">50</button>
+        </div>
+      </div>
+
+      <!-- Play Mode Selection -->
+      <div class="space-y-2">
+        <label class="text-sm font-semibold text-slate-200 block">Game Mode:</label>
+        <div class="grid grid-cols-2 gap-3 text-xs font-sans">
+          <button type="button" onclick="app.setModeConfig('practice')" id="mode-btn-practice" class="mode-opt-btn p-3 rounded-xl border border-slate-600 text-left">
+            <div class="font-bold text-sm text-indigo-300">Practice Mode</div>
+            <div class="text-slate-400 text-[11px] mt-0.5">Shows visual arrays & feedback</div>
+          </button>
+          <button type="button" onclick="app.setModeConfig('mtc')" id="mode-btn-mtc" class="mode-opt-btn p-3 rounded-xl border border-slate-600 text-left">
+            <div class="font-bold text-sm text-rose-300">Strict MTC Mode</div>
+            <div class="text-slate-400 text-[11px] mt-0.5">Strict 25q @ 6s simulation</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button onclick="app.startCustomGame()" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-lg rounded-2xl shadow-lg shadow-emerald-500/20 transform active:scale-[0.99] transition">
+          <i class="fas fa-play mr-2"></i> Start Practice Session!
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. GAMEPLAY SCREEN -->
+    <div id="game-screen" class="screen-view hidden flex-1 flex flex-col justify-between max-w-lg mx-auto w-full py-2">
+      <!-- Game Top Info Bar -->
+      <div class="space-y-2">
+        <div class="flex justify-between items-center text-sm font-sans">
+          <span class="text-slate-400 font-medium">
+            Question <span id="current-q-num" class="text-amber-400 font-bold text-base">1</span> of <span id="total-q-num" class="text-slate-200">10</span>
+          </span>
+          <div class="flex items-center gap-3">
+            <span class="text-slate-400 font-medium">
+              Score: <span id="current-score" class="text-emerald-400 font-bold text-base">0</span>
+            </span>
+            <button onclick="app.exitGame()" class="text-slate-400 hover:text-rose-400 transition text-xs bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+              Quit
+            </button>
+          </div>
+        </div>
+
+        <!-- Visual Progress Bar -->
+        <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+          <div id="game-progress-bar" class="bg-indigo-500 h-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+
+        <!-- Timer Countdown Bar -->
+        <div id="timer-container" class="w-full bg-slate-800/80 rounded-full h-3 overflow-hidden border border-slate-700/60 relative">
+          <div id="timer-bar" class="bg-emerald-400 h-full transition-all duration-100 ease-linear" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <!-- Question Display Card -->
+      <div id="question-card" class="my-4 bg-slate-800/90 border-2 border-slate-700 rounded-3xl p-6 text-center shadow-xl relative min-h-[160px] flex flex-col items-center justify-center">
+        <!-- Encouragement / Answer Feedback Floating Text -->
+        <div id="feedback-badge" class="absolute -top-4 px-4 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-200 transform scale-0 opacity-0">
+          Superstar! ⭐
+        </div>
+
+        <!-- Question Display -->
+        <div class="flex items-center justify-center space-x-3 text-4xl sm:text-6xl font-black text-white tracking-wider">
+          <span id="q-factor-1">4</span>
+          <span class="text-amber-400">×</span>
+          <span id="q-factor-2">6</span>
+          <span class="text-slate-500">=</span>
+          <div class="relative inline-block">
+            <span id="user-answer-display" class="inline-block min-w-[70px] text-center border-b-4 border-amber-400 text-amber-300 pb-1 px-2 min-h-[50px]"></span>
+          </div>
+        </div>
+
+        <!-- Hint / Array Visualizer (Practice Mode Only) -->
+        <div id="hint-container" class="mt-3 hidden">
+          <button onclick="app.toggleHint()" id="hint-btn" class="text-xs font-sans text-indigo-400 hover:text-indigo-300 underline flex items-center gap-1 mx-auto">
+            <i class="fas fa-lightbulb text-amber-400"></i> <span id="hint-btn-text">Show visual dots hint</span>
+          </button>
+          <div id="visual-array-box" class="hidden mt-3 p-3 bg-slate-900/80 rounded-xl border border-slate-700/80 max-h-[100px] overflow-y-auto no-scrollbar">
+            <!-- Dynamically populated dot array -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Virtual Numpad -->
+      <div class="space-y-2 max-w-xs mx-auto w-full">
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="app.pressNum('1')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">1</button>
+          <button onclick="app.pressNum('2')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">2</button>
+          <button onclick="app.pressNum('3')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">3</button>
+
+          <button onclick="app.pressNum('4')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">4</button>
+          <button onclick="app.pressNum('5')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">5</button>
+          <button onclick="app.pressNum('6')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">6</button>
+
+          <button onclick="app.pressNum('7')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">7</button>
+          <button onclick="app.pressNum('8')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">8</button>
+          <button onclick="app.pressNum('9')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">9</button>
+
+          <button onclick="app.pressClear()" class="numpad-btn bg-rose-900/60 hover:bg-rose-800/80 text-rose-200 font-bold text-lg py-3 rounded-2xl shadow-pop border border-rose-700/50 flex items-center justify-center">
+            <i class="fas fa-backspace"></i>
+          </button>
+          <button onclick="app.pressNum('0')" class="numpad-btn bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-2xl py-3 rounded-2xl shadow-pop border border-slate-600">0</button>
+          <button onclick="app.submitAnswer()" class="numpad-btn bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xl py-3 rounded-2xl shadow-pop border border-emerald-400 flex items-center justify-center">
+            <i class="fas fa-check"></i>
+          </button>
+        </div>
+
+        <p class="text-[11px] text-center text-slate-400 font-sans pt-1">
+          Tip: You can also use your keyboard numpad or numbers!
+        </p>
+      </div>
+    </div>
+
+    <!-- 4. RESULTS & REPORT CARD SCREEN -->
+    <div id="results-screen" class="screen-view hidden space-y-5 bg-slate-800/90 p-5 sm:p-7 rounded-3xl border border-slate-700 shadow-2xl max-w-xl mx-auto text-center">
+      <div class="space-y-1">
+        <div id="result-stars" class="text-4xl sm:text-5xl space-x-2 text-amber-400">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+        </div>
+        <h2 id="result-title" class="text-3xl font-black text-white">Awesome Job!</h2>
+        <p id="result-subtitle" class="text-slate-300 text-sm font-sans">You're making great progress in your multiplication!</p>
+      </div>
+
+      <!-- Stats Summary Grid -->
+      <div class="grid grid-cols-3 gap-3 font-sans">
+        <div class="bg-slate-900/70 p-3 rounded-2xl border border-slate-700">
+          <div class="text-xs text-slate-400">Score</div>
+          <div id="res-score" class="text-2xl font-bold text-emerald-400">22 / 25</div>
+        </div>
+        <div class="bg-slate-900/70 p-3 rounded-2xl border border-slate-700">
+          <div class="text-xs text-slate-400">Accuracy</div>
+          <div id="res-accuracy" class="text-2xl font-bold text-amber-400">88%</div>
+        </div>
+        <div class="bg-slate-900/70 p-3 rounded-2xl border border-slate-700">
+          <div class="text-xs text-slate-400">Avg Speed</div>
+          <div id="res-avg-time" class="text-2xl font-bold text-indigo-400">3.4s</div>
+        </div>
+      </div>
+
+      <!-- Missed Questions Section -->
+      <div id="missed-q-container" class="text-left bg-slate-900/60 p-4 rounded-2xl border border-slate-700 space-y-2">
+        <div class="text-xs font-bold text-slate-300 uppercase tracking-wider flex justify-between items-center">
+          <span>Questions to Review</span>
+          <span id="missed-count-badge" class="text-rose-400 font-sans text-xs">0 items</span>
+        </div>
+        <div id="missed-q-list" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pt-1 font-sans text-xs">
+          <!-- Dynamically inserted pill list -->
+        </div>
+      </div>
+
+      <!-- Unlocked Stickers / Achievements -->
+      <div id="unlocked-badge-box" class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl flex items-center justify-center gap-3">
+        <span class="text-3xl">🏅</span>
+        <div class="text-left">
+          <div class="text-xs font-bold text-amber-300">Badge Earned: <span id="badge-name">Speedy Multiplier</span></div>
+          <div class="text-[11px] text-slate-300 font-sans">Keep practicing to unlock all achievement badges!</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button onclick="app.restartGame()" class="py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-xl shadow-lg transition text-sm">
+          <i class="fas fa-redo mr-1"></i> Try Again
+        </button>
+        <button onclick="app.showScreen('stats-screen')" class="py-3.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold rounded-xl border border-slate-600 transition text-sm">
+          <i class="fas fa-chart-grid mr-1"></i> View Heatmap
+        </button>
+      </div>
+    </div>
+
+    <!-- 5. STATS & ACCURACY HEATMAP SCREEN -->
+    <div id="stats-screen" class="screen-view hidden space-y-5 bg-slate-800/90 p-5 sm:p-7 rounded-3xl border border-slate-700 shadow-2xl max-w-2xl mx-auto">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fas fa-fire text-amber-400"></i> Tables Heatmap Grid
+          </h2>
+          <p class="text-xs text-slate-400 font-sans">Green = Mastered | Yellow = Needs Practice | Red = Tricky</p>
+        </div>
+        <button onclick="app.showScreen('welcome-screen')" class="text-slate-400 hover:text-white text-lg p-2">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- 12x12 Heatmap Container -->
+      <div class="overflow-x-auto pb-2 no-scrollbar">
+        <div id="heatmap-grid-container" class="inline-block min-w-[320px] w-full">
+          <!-- Dynamically generated 12x12 grid -->
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-slate-700 text-xs font-sans">
+        <button onclick="app.resetHeatmapData()" class="text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1">
+          <i class="fas fa-trash-alt"></i> Reset History Data
+        </button>
+        <button onclick="app.showScreen('welcome-screen')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition">
+          Back to Main Menu
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="text-center p-3 text-xs text-slate-500 font-sans">
+    Designed for Primary School Multiplication Prep (UK Year 4 MTC standard)
+  </footer>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    /**
+     * Web Audio API Sound Effects Manager
+     */
+    class SoundManager {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+      }
+
+      playTone(freq, type, duration, delay = 0) {
+        if (this.muted || !this.ctx) return;
+        setTimeout(() => {
+          try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+          } catch(e) {}
+        }, delay);
+      }
+
+      playCorrect() {
+        this.init();
+        this.playTone(523.25, 'sine', 0.1, 0);   // C5
+        this.playTone(659.25, 'sine', 0.1, 80);  // E5
+        this.playTone(783.99, 'sine', 0.25, 160); // G5
+      }
+
+      playWrong() {
+        this.init();
+        this.playTone(220, 'sawtooth', 0.15, 0);  // A3
+        this.playTone(185, 'sawtooth', 0.3, 120); // F#3
+      }
+
+      playClick() {
+        this.init();
+        this.playTone(400, 'triangle', 0.04, 0);
+      }
+
+      playTick() {
+        this.init();
+        this.playTone(800, 'sine', 0.03, 0);
+      }
+
+      playFanfare() {
+        this.init();
+        this.playTone(523.25, 'triangle', 0.12, 0);
+        this.playTone(659.25, 'triangle', 0.12, 120);
+        this.playTone(783.99, 'triangle', 0.12, 240);
+        this.playTone(1046.50, 'triangle', 0.4, 360);
+      }
+    }
+
+    /**
+     * Core Application State & Logic
+     */
+    class TimesTableApp {
+      constructor() {
+        this.sound = new SoundManager();
+        this.config = {
+          tables: [3, 4, 6], // Default requirement: 3, 4, 6
+          timeLimit: 10,     // Default requirement: 10s
+          questionCount: 25, // Updated default: 25 questions
+          mode: 'practice'   // 'practice' or 'mtc'
+        };
+
+        this.gameState = {
+          questions: [],
+          currentIndex: 0,
+          score: 0,
+          userAnswer: '',
+          timer: null,
+          timeLeft: 0,
+          startTime: 0,
+          questionStartTime: 0,
+          totalTimeSpent: 0,
+          missedQuestions: [],
+          heatmapStats: JSON.parse(localStorage.getItem('mtc_heatmap_v1') || '{}')
+        };
+
+        this.init();
+      }
+
+      init() {
+        this.renderTableCheckboxes();
+        this.updateConfigUI();
+        this.attachKeyboardListeners();
+      }
+
+      // Toggle Sound Mute
+      toggleSound() {
+        this.sound.muted = !this.sound.muted;
+        const icon = document.getElementById('sound-icon');
+        if (this.sound.muted) {
+          icon.className = 'fas fa-volume-mute text-slate-500';
+        } else {
+          icon.className = 'fas fa-volume-up text-emerald-400';
+          this.sound.playClick();
+        }
+      }
+
+      // Navigation Screen Switcher
+      showScreen(screenId) {
+        document.querySelectorAll('.screen-view').forEach(s => s.classList.add('hidden'));
+        document.getElementById(screenId).classList.remove('hidden');
+        this.sound.playClick();
+
+        if (screenId === 'stats-screen') {
+          this.renderHeatmap();
+        }
+      }
+
+      // Render Checkboxes 1 to 12
+      renderTableCheckboxes() {
+        const grid = document.getElementById('tables-grid');
+        grid.innerHTML = '';
+        for (let i = 1; i <= 12; i++) {
+          const isChecked = this.config.tables.includes(i);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = `table-chip-${i}`;
+          btn.onclick = () => this.toggleTableSelect(i);
+          btn.className = `p-2.5 rounded-xl font-bold text-sm border transition flex flex-col items-center justify-center ${
+            isChecked 
+              ? 'bg-amber-500 border-amber-400 text-slate-950 shadow-md' 
+              : 'bg-slate-700/60 border-slate-600 text-slate-300 hover:bg-slate-700'
+          }`;
+          btn.innerHTML = `<span>${i}×</span>`;
+          grid.appendChild(btn);
+        }
+      }
+
+      toggleTableSelect(num) {
+        const idx = this.config.tables.indexOf(num);
+        if (idx > -1) {
+          if (this.config.tables.length > 1) {
+            this.config.tables.splice(idx, 1);
+          }
+        } else {
+          this.config.tables.push(num);
+        }
+        this.config.tables.sort((a,b) => a-b);
+        this.renderTableCheckboxes();
+        this.sound.playClick();
+      }
+
+      selectAllTables(selectAll) {
+        if (selectAll) {
+          this.config.tables = [1,2,3,4,5,6,7,8,9,10,11,12];
+        } else {
+          this.config.tables = [2]; // keep at least one
+        }
+        this.renderTableCheckboxes();
+        this.sound.playClick();
+      }
+
+      selectDefaultTables() {
+        this.config.tables = [3, 4, 6];
+        this.config.timeLimit = 10;
+        this.config.questionCount = 25;
+        this.renderTableCheckboxes();
+        this.updateConfigUI();
+        this.sound.playClick();
+      }
+
+      setTimerConfig(seconds) {
+        this.config.timeLimit = seconds;
+        this.updateConfigUI();
+        this.sound.playClick();
+      }
+
+      setQCountConfig(count) {
+        this.config.questionCount = count;
+        this.updateConfigUI();
+        this.sound.playClick();
+      }
+
+      setModeConfig(mode) {
+        this.config.mode = mode;
+        if (mode === 'mtc') {
+          this.config.tables = [2,3,4,5,6,7,8,9,10,11,12];
+          this.config.timeLimit = 6;
+          this.config.questionCount = 25;
+          this.renderTableCheckboxes();
+        }
+        this.updateConfigUI();
+        this.sound.playClick();
+      }
+
+      updateConfigUI() {
+        // Highlight active timer button
+        document.querySelectorAll('.timer-opt-btn').forEach(btn => {
+          btn.className = 'timer-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold bg-slate-700/60 text-slate-300 hover:bg-slate-700';
+        });
+        const timerBtn = document.getElementById(`timer-btn-${this.config.timeLimit}`);
+        if (timerBtn) {
+          timerBtn.className = 'timer-opt-btn p-2.5 rounded-xl border border-amber-400 text-center font-bold bg-amber-500 text-slate-950 shadow-md';
+        }
+
+        // Highlight qcount button
+        document.querySelectorAll('.qcount-opt-btn').forEach(btn => {
+          btn.className = 'qcount-opt-btn p-2.5 rounded-xl border border-slate-600 text-center font-bold bg-slate-700/60 text-slate-300 hover:bg-slate-700';
+        });
+        const qBtn = document.getElementById(`qcount-btn-${this.config.questionCount}`);
+        if (qBtn) {
+          qBtn.className = 'qcount-opt-btn p-2.5 rounded-xl border border-amber-400 text-center font-bold bg-amber-500 text-slate-950 shadow-md';
+        }
+
+        // Highlight mode buttons
+        const pBtn = document.getElementById('mode-btn-practice');
+        const mBtn = document.getElementById('mode-btn-mtc');
+        if (this.config.mode === 'practice') {
+          pBtn.className = 'mode-opt-btn p-3 rounded-xl border-2 border-indigo-400 bg-indigo-900/40 text-left';
+          mBtn.className = 'mode-opt-btn p-3 rounded-xl border border-slate-600 bg-slate-700/40 text-left';
+        } else {
+          mBtn.className = 'mode-opt-btn p-3 rounded-xl border-2 border-rose-400 bg-rose-900/40 text-left';
+          pBtn.className = 'mode-opt-btn p-3 rounded-xl border border-slate-600 bg-slate-700/40 text-left';
+        }
+      }
+
+      quickStart(mode) {
+        if (mode === 'practice') {
+          this.config.tables = [3, 4, 6];
+          this.config.timeLimit = 10;
+          this.config.questionCount = 25;
+          this.config.mode = 'practice';
+        } else if (mode === 'mtc') {
+          this.config.tables = [2,3,4,5,6,7,8,9,10,11,12];
+          this.config.timeLimit = 6;
+          this.config.questionCount = 25;
+          this.config.mode = 'mtc';
+        }
+        this.renderTableCheckboxes();
+        this.updateConfigUI();
+        this.startGame();
+      }
+
+      startCustomGame() {
+        this.startGame();
+      }
+
+      startGame() {
+        // Generate Question Pool
+        const questions = [];
+        const count = this.config.questionCount;
+        
+        for (let i = 0; i < count; i++) {
+          const table = this.config.tables[Math.floor(Math.random() * this.config.tables.length)];
+          const factor = Math.floor(Math.random() * 12) + 1; // 1 to 12
+          // Randomize order so e.g. 4x6 and 6x4 both occur
+          const swap = Math.random() > 0.5;
+          questions.push({
+            f1: swap ? factor : table,
+            f2: swap ? table : factor,
+            answer: table * factor,
+            primaryTable: table
+          });
+        }
+
+        this.gameState.questions = questions;
+        this.gameState.currentIndex = 0;
+        this.gameState.score = 0;
+        this.gameState.userAnswer = '';
+        this.gameState.totalTimeSpent = 0;
+        this.gameState.missedQuestions = [];
+
+        this.showScreen('game-screen');
+        
+        // Show/hide practice hint button
+        const hintCont = document.getElementById('hint-container');
+        if (this.config.mode === 'practice') {
+          hintCont.classList.remove('hidden');
+        } else {
+          hintCont.classList.add('hidden');
+        }
+
+        this.loadQuestion();
+      }
+
+      loadQuestion() {
+        if (this.gameState.currentIndex >= this.gameState.questions.length) {
+          this.finishGame();
+          return;
+        }
+
+        const q = this.gameState.questions[this.gameState.currentIndex];
+        this.gameState.userAnswer = '';
+        
+        // Update Header UI
+        document.getElementById('current-q-num').textContent = this.gameState.currentIndex + 1;
+        document.getElementById('total-q-num').textContent = this.gameState.questions.length;
+        document.getElementById('current-score').textContent = this.gameState.score;
+        document.getElementById('user-answer-display').textContent = '';
+
+        // Progress bar width
+        const prog = (this.gameState.currentIndex / this.gameState.questions.length) * 100;
+        document.getElementById('game-progress-bar').style.width = `${prog}%`;
+
+        // Render Equation
+        document.getElementById('q-factor-1').textContent = q.f1;
+        document.getElementById('q-factor-2').textContent = q.f2;
+
+        // Reset Hint visualizer if open
+        document.getElementById('visual-array-box').classList.add('hidden');
+        document.getElementById('hint-btn-text').textContent = "Show visual dots hint";
+
+        // Reset Feedback Toast
+        const badge = document.getElementById('feedback-badge');
+        badge.className = 'absolute -top-4 px-4 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-200 transform scale-0 opacity-0';
+
+        // Start Question Timer
+        this.startTimer();
+      }
+
+      startTimer() {
+        clearInterval(this.gameState.timer);
+        const timerContainer = document.getElementById('timer-container');
+        const timerBar = document.getElementById('timer-bar');
+
+        if (this.config.timeLimit === 0) {
+          timerContainer.classList.add('hidden');
+          this.gameState.questionStartTime = Date.now();
+          return;
+        }
+
+        timerContainer.classList.remove('hidden');
+        this.gameState.timeLeft = this.config.timeLimit;
+        this.gameState.questionStartTime = Date.now();
+
+        timerBar.style.width = '100%';
+        timerBar.className = 'bg-emerald-400 h-full transition-all duration-100 ease-linear';
+
+        const intervalMs = 100;
+        const totalMs = this.config.timeLimit * 1000;
+        let elapsed = 0;
+
+        this.gameState.timer = setInterval(() => {
+          elapsed += intervalMs;
+          const remainingRatio = Math.max(0, (totalMs - elapsed) / totalMs);
+          timerBar.style.width = `${remainingRatio * 100}%`;
+
+          if (remainingRatio < 0.3) {
+            timerBar.className = 'bg-rose-500 h-full transition-all duration-100 ease-linear animate-pulse-fast';
+          } else if (remainingRatio < 0.6) {
+            timerBar.className = 'bg-amber-400 h-full transition-all duration-100 ease-linear';
+          }
+
+          if (elapsed >= totalMs) {
+            clearInterval(this.gameState.timer);
+            this.handleTimeout();
+          }
+        }, intervalMs);
+      }
+
+      pressNum(digit) {
+        this.sound.playClick();
+        if (this.gameState.userAnswer.length < 3) {
+          this.gameState.userAnswer += digit;
+          document.getElementById('user-answer-display').textContent = this.gameState.userAnswer;
+        }
+      }
+
+      pressClear() {
+        this.sound.playClick();
+        this.gameState.userAnswer = this.gameState.userAnswer.slice(0, -1);
+        document.getElementById('user-answer-display').textContent = this.gameState.userAnswer;
+      }
+
+      submitAnswer() {
+        if (!this.gameState.userAnswer) return;
+        clearInterval(this.gameState.timer);
+
+        const currentQ = this.gameState.questions[this.gameState.currentIndex];
+        const val = parseInt(this.gameState.userAnswer, 10);
+        const isCorrect = val === currentQ.answer;
+
+        const timeTaken = (Date.now() - this.gameState.questionStartTime) / 1000;
+        this.gameState.totalTimeSpent += timeTaken;
+
+        this.recordHeatmapData(currentQ.f1, currentQ.f2, isCorrect);
+
+        if (isCorrect) {
+          this.gameState.score++;
+          this.sound.playCorrect();
+          this.showFeedbackToast(true, "Superstar! ⭐");
+        } else {
+          this.sound.playWrong();
+          this.gameState.missedQuestions.push({
+            qStr: `${currentQ.f1} × ${currentQ.f2}`,
+            userAns: val,
+            correctAns: currentQ.answer
+          });
+          this.showFeedbackToast(false, `Oops! Correct: ${currentQ.answer}`);
+        }
+
+        // Short pause before next question
+        const pauseTime = this.config.mode === 'mtc' ? 2500 : 1200;
+        setTimeout(() => {
+          this.gameState.currentIndex++;
+          this.loadQuestion();
+        }, pauseTime);
+      }
+
+      handleTimeout() {
+        this.sound.playWrong();
+        const currentQ = this.gameState.questions[this.gameState.currentIndex];
+        
+        this.gameState.totalTimeSpent += this.config.timeLimit;
+        this.recordHeatmapData(currentQ.f1, currentQ.f2, false);
+
+        this.gameState.missedQuestions.push({
+          qStr: `${currentQ.f1} × ${currentQ.f2}`,
+          userAns: 'Time Out',
+          correctAns: currentQ.answer
+        });
+
+        this.showFeedbackToast(false, `Time's Up! Correct: ${currentQ.answer}`);
+
+        setTimeout(() => {
+          this.gameState.currentIndex++;
+          this.loadQuestion();
+        }, 2200);
+      }
+
+      showFeedbackToast(isCorrect, message) {
+        const badge = document.getElementById('feedback-badge');
+        badge.textContent = message;
+        if (isCorrect) {
+          badge.className = 'absolute -top-4 px-4 py-1.5 rounded-full text-xs font-black shadow-lg bg-emerald-500 text-slate-950 transition-all duration-200 transform scale-110 opacity-100 animate-bounce-short';
+        } else {
+          badge.className = 'absolute -top-4 px-4 py-1.5 rounded-full text-xs font-black shadow-lg bg-rose-500 text-white transition-all duration-200 transform scale-110 opacity-100 animate-shake';
+        }
+      }
+
+      toggleHint() {
+        const arrayBox = document.getElementById('visual-array-box');
+        const q = this.gameState.questions[this.gameState.currentIndex];
+        
+        if (arrayBox.classList.contains('hidden')) {
+          arrayBox.classList.remove('hidden');
+          document.getElementById('hint-btn-text').textContent = "Hide hint";
+          
+          // Render array dots grid
+          let dotsHtml = `<div class="text-[10px] text-slate-400 mb-1 font-sans">${q.f1} rows of ${q.f2} dots:</div>`;
+          dotsHtml += `<div class="grid gap-1 justify-center" style="grid-template-columns: repeat(${q.f2}, minmax(0, 1fr)); flex-wrap: wrap;">`;
+          for (let i = 0; i < q.f1 * q.f2; i++) {
+            dotsHtml += `<div class="w-3 h-3 rounded-full bg-amber-400 shadow-sm mx-auto"></div>`;
+          }
+          dotsHtml += `</div>`;
+          arrayBox.innerHTML = dotsHtml;
+        } else {
+          arrayBox.classList.add('hidden');
+          document.getElementById('hint-btn-text').textContent = "Show visual dots hint";
+        }
+      }
+
+      finishGame() {
+        clearInterval(this.gameState.timer);
+        this.sound.playFanfare();
+
+        const total = this.gameState.questions.length;
+        const score = this.gameState.score;
+        const pct = Math.round((score / total) * 100);
+        const avgTime = (this.gameState.totalTimeSpent / total).toFixed(1);
+
+        // Update UI
+        document.getElementById('res-score').textContent = `${score} / ${total}`;
+        document.getElementById('res-accuracy').textContent = `${pct}%`;
+        document.getElementById('res-avg-time').textContent = `${avgTime}s`;
+
+        // Stars & Title
+        const starsContainer = document.getElementById('result-stars');
+        const resultTitle = document.getElementById('result-title');
+        const resultSub = document.getElementById('result-subtitle');
+
+        if (pct === 100) {
+          starsContainer.innerHTML = '<i class="fas fa-star text-amber-400"></i><i class="fas fa-star text-amber-400"></i><i class="fas fa-star text-amber-400"></i>';
+          resultTitle.textContent = "Perfect Score! 🏆";
+          resultSub.textContent = "You are an absolute Multiplication Champion!";
+          confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+        } else if (pct >= 80) {
+          starsContainer.innerHTML = '<i class="fas fa-star text-amber-400"></i><i class="fas fa-star text-amber-400"></i><i class="far fa-star text-slate-600"></i>';
+          resultTitle.textContent = "Great Job! 🌟";
+          resultSub.textContent = "So close to perfection! Keep up the brilliant effort.";
+        } else {
+          starsContainer.innerHTML = '<i class="fas fa-star text-amber-400"></i><i class="far fa-star text-slate-600"></i><i class="far fa-star text-slate-600"></i>';
+          resultTitle.textContent = "Keep Practicing! 💪";
+          resultSub.textContent = "Every round makes your brain stronger. You can do it!";
+        }
+
+        // Missed Questions List
+        const missedBox = document.getElementById('missed-q-list');
+        const missedCountBadge = document.getElementById('missed-count-badge');
+        missedBox.innerHTML = '';
+
+        if (this.gameState.missedQuestions.length === 0) {
+          missedCountBadge.textContent = '0 errors!';
+          missedCountBadge.className = 'text-emerald-400 font-sans text-xs font-bold';
+          missedBox.innerHTML = '<span class="text-emerald-400">No missed questions! Perfect round!</span>';
+        } else {
+          missedCountBadge.textContent = `${this.gameState.missedQuestions.length} to review`;
+          missedCountBadge.className = 'text-rose-400 font-sans text-xs font-bold';
+          this.gameState.missedQuestions.forEach(m => {
+            const pill = document.createElement('div');
+            pill.className = 'px-2.5 py-1 bg-slate-800 rounded-lg border border-slate-700 flex items-center gap-1.5';
+            pill.innerHTML = `
+              <span class="font-bold text-white">${m.qStr}</span> = 
+              <span class="text-emerald-400 font-bold">${m.correctAns}</span>
+              <span class="text-slate-500 text-[10px]">(Entered: ${m.userAns})</span>
+            `;
+            missedBox.appendChild(pill);
+          });
+        }
+
+        // Achievement Sticker / Badge
+        const badgeName = document.getElementById('badge-name');
+        if (pct === 100 && this.config.timeLimit <= 6) {
+          badgeName.textContent = "Lightning MTC Master ⚡";
+        } else if (pct >= 80) {
+          badgeName.textContent = "Times Tables Star 🌟";
+        } else {
+          badgeName.textContent = "Maths Explorer 🧭";
+        }
+
+        this.showScreen('results-screen');
+      }
+
+      restartGame() {
+        this.startGame();
+      }
+
+      exitGame() {
+        clearInterval(this.gameState.timer);
+        this.showScreen('welcome-screen');
+      }
+
+      // LocalStorage Heatmap Tracking Logic
+      recordHeatmapData(f1, f2, isCorrect) {
+        // Record both key orders for full matrix coverage (e.g. 4x6 and 6x4)
+        const keys = [`${f1}x${f2}`, `${f2}x${f1}`];
+        keys.forEach(key => {
+          if (!this.gameState.heatmapStats[key]) {
+            this.gameState.heatmapStats[key] = { attempts: 0, correct: 0 };
+          }
+          this.gameState.heatmapStats[key].attempts++;
+          if (isCorrect) this.gameState.heatmapStats[key].correct++;
+        });
+
+        localStorage.setItem('mtc_heatmap_v1', JSON.stringify(this.gameState.heatmapStats));
+      }
+
+      renderHeatmap() {
+        const container = document.getElementById('heatmap-grid-container');
+        let html = '<table class="w-full text-center border-collapse text-xs font-sans">';
+        
+        // Header row
+        html += '<thead><tr><th class="p-1 text-slate-400">×</th>';
+        for (let c = 1; c <= 12; c++) {
+          html += `<th class="p-1 font-bold text-amber-300 border-b border-slate-700">${c}</th>`;
+        }
+        html += '</tr></thead><tbody>';
+
+        // Grid rows
+        for (let r = 1; r <= 12; r++) {
+          html += `<tr><th class="p-1 font-bold text-amber-300 border-r border-slate-700">${r}</th>`;
+          for (let c = 1; c <= 12; c++) {
+            const key = `${r}x${c}`;
+            const stat = this.gameState.heatmapStats[key];
+            
+            let bgClass = 'bg-slate-800 text-slate-500'; // Untested
+            let tooltip = `${r} × ${c}: Not practiced yet`;
+
+            if (stat && stat.attempts > 0) {
+              const ratio = stat.correct / stat.attempts;
+              if (ratio >= 0.85) {
+                bgClass = 'bg-emerald-600/80 text-white font-bold'; // Mastered
+              } else if (ratio >= 0.6) {
+                bgClass = 'bg-amber-500/80 text-slate-950 font-bold'; // Almost
+              } else {
+                bgClass = 'bg-rose-600/80 text-white font-bold'; // Weak
+              }
+              tooltip = `${r} × ${c}: ${stat.correct}/${stat.attempts} correct (${Math.round(ratio*100)}%)`;
+            }
+
+            html += `<td class="p-0.5"><div title="${tooltip}" class="w-6 h-6 sm:w-7 sm:h-7 mx-auto rounded-md ${bgClass} flex items-center justify-center text-[10px] cursor-help transition transform hover:scale-110">${r*c}</div></td>`;
+          }
+          html += '</tr>';
+        }
+        html += '</tbody></table>';
+
+        container.innerHTML = html;
+      }
+
+      resetHeatmapData() {
+        if (confirm("Reset all table progress history?")) {
+          this.gameState.heatmapStats = {};
+          localStorage.removeItem('mtc_heatmap_v1');
+          this.renderHeatmap();
+        }
+      }
+
+      attachKeyboardListeners() {
+        window.addEventListener('keydown', (e) => {
+          const gameScreen = document.getElementById('game-screen');
+          if (gameScreen.classList.contains('hidden')) return;
+
+          if (e.key >= '0' && e.key <= '9') {
+            this.pressNum(e.key);
+          } else if (e.key === 'Backspace') {
+            this.pressClear();
+          } else if (e.key === 'Enter') {
+            this.submitAnswer();
+          }
+        });
+      }
+    }
+
+    // Initialize App when loaded
+    let app;
+    window.addEventListener('DOMContentLoaded', () => {
+      app = new TimesTableApp();
+    });
+  </script>
+</body>
+</html>
